@@ -1,38 +1,74 @@
 from urllib.parse import urlencode
 from .web_request import json_request
+from datetime import datetime
+import sys
+import math
 
 
-ACCESS_TOKEN = 'lPho2AedT94HdWcuLEqLx%2FxutLFprTW4diIv6lp%2FylcbEtT0TFuMSfWdSiWip2LcqZ3fRfZ4tTKNyZiU%2BKUfAw%3D%3D'
+SERVICE_KEY = 'lPho2AedT94HdWcuLEqLx%2FxutLFprTW4diIv6lp%2FylcbEtT0TFuMSfWdSiWip2LcqZ3fRfZ4tTKNyZiU%2BKUfAw%3D%3D'
 EndPoint = 'http://openapi.tour.go.kr/openapi/service/TourismResourceStatsService/getPchrgTrrsrtVisitorList'
 
-def pd_gen_url(base=EndPoint, **params):
-    url = '%s?serviceKey=%s&%s' % (base, ACCESS_TOKEN, urlencode(params))
+def pd_gen_url(endpoint, **params):
+    url = '%s?%s&serviceKey=%s' % (endpoint, urlencode(params), SERVICE_KEY)
     return url
 
 
-def pd_fetch_tourspot_visitor(district1='', district2='', tourspot='', year=0, month=0):
-    url = pd_gen_url(YM='{0:04d}{1:02d}'.format(year, month),
-                     SIDO=district1,
-                     GUNGU=district2,
-                     RES_NM=tourspot,
-                     numOfRows='10',
-                     _type='json',
-                     pageNo=1)
-
+def pd_fetch_foreign_visitor(country_code, year, month):
+    endpoint = 'http://openapi.tour.go.kr/openapi/service/EdrcntTourismStatsService/getEdrcntTourismStatsList'
+    url = pd_gen_url(endpoint, YM='{0:04d}{1:02d}'.format(year, month), NAT_CD=country_code, ED_CD='E', _type='json')
     json_result = json_request(url=url)
-    print(json_result)
 
-'''
-    isnext = True
+    json_response = json_result.get('response')
+    json_header = json_response.get('header')
+    result_message = json_header.get('resultMsg')
 
-    while isnext is True:
+    if 'OK' != result_message:
+        print('%s Error[%s] for request %s' % (datetime.now(), result_message, url))
+        return None
+
+    json_body = json_response.get('body')
+    json_items = json_body.get('items')
+
+    return json_items.get('item') if isinstance(json_items, dict) else None
+
+
+def pd_fetch_tourspot_visitor(district1='', district2='', tourspot='', year=0, month=0):
+    pageno = 1
+    hasnext = True
+
+    while hasnext:
+        url = pd_gen_url(EndPoint, YM='{0:04d}{1:02d}'.format(year, month),
+                         SIDO=district1, GUNGU=district2, RES_NM=tourspot,
+                         numOfRows=100, _type='json', pageNo=pageno)
+
         json_result = json_request(url=url)
 
-        paging = None if json_result is None else json_result.get('paging')
-        posts = None if json_result is None else json_result.get('data')
+        if json_result is None:
+            break
 
-        url = None if paging is None else paging.get('next')
-        isnext = url is not None
+        json_response = json_result.get('response')
+        json_header = json_response.get('header')
+        result_message = json_header.get('resultMsg')
 
-        yield posts
-'''
+        if 'OK' != result_message:
+            print('%s: Error[%s] for Request(%s)' % (datetime.now(), result_message, url), file=sys.stderr)
+            break
+
+        json_body = json_response.get('body')
+
+        numofrows = json_body.get('numOfRows')
+        totalcount = json_body.get('totalCount')
+
+        if totalcount == 0:
+            break
+
+        last_pagen = math.ceil(totalcount/numofrows)
+
+        if pageno == last_pagen:
+            hasnext = False
+        else:
+            pageno += 1
+
+
+        json_items = json_body.get('items')
+        yield json_items.get('item') if isinstance(json_items, dict) else None

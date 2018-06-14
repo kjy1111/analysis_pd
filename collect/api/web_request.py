@@ -8,8 +8,8 @@ def json_request(url='', encoding='utf-8', success=None, error=lambda e: print('
     try:
         request = Request(url)
         resp = urlopen(request)
-        resp_body = resp.read().decode(encoding)
 
+        resp_body = resp.read().decode(encoding)
         json_result = json.loads(resp_body)
 
         print('%s: success for request[%s]' % (datetime.now(), url))
