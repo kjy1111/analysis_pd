@@ -5,17 +5,17 @@ import sys
 import math
 
 
-SERVICE_KEY = 'lPho2AedT94HdWcuLEqLx%2FxutLFprTW4diIv6lp%2FylcbEtT0TFuMSfWdSiWip2LcqZ3fRfZ4tTKNyZiU%2BKUfAw%3D%3D'
 EndPoint = 'http://openapi.tour.go.kr/openapi/service/TourismResourceStatsService/getPchrgTrrsrtVisitorList'
 
-def pd_gen_url(endpoint, **params):
-    url = '%s?%s&serviceKey=%s' % (endpoint, urlencode(params), SERVICE_KEY)
+
+def pd_gen_url(endpoint, service_key, **params):
+    url = '%s?%s&serviceKey=%s' % (endpoint, urlencode(params), service_key)
     return url
 
 
-def pd_fetch_foreign_visitor(country_code, year, month):
+def pd_fetch_foreign_visitor(country_code, year, month, service_key=''):
     endpoint = 'http://openapi.tour.go.kr/openapi/service/EdrcntTourismStatsService/getEdrcntTourismStatsList'
-    url = pd_gen_url(endpoint, YM='{0:04d}{1:02d}'.format(year, month), NAT_CD=country_code, ED_CD='E', _type='json')
+    url = pd_gen_url(endpoint, service_key, YM='{0:04d}{1:02d}'.format(year, month), NAT_CD=country_code, ED_CD='E', _type='json')
     json_result = json_request(url=url)
 
     json_response = json_result.get('response')
@@ -32,12 +32,12 @@ def pd_fetch_foreign_visitor(country_code, year, month):
     return json_items.get('item') if isinstance(json_items, dict) else None
 
 
-def pd_fetch_tourspot_visitor(district1='', district2='', tourspot='', year=0, month=0):
+def pd_fetch_tourspot_visitor(district1='', district2='', tourspot='', year=0, month=0, service_key=''):
     pageno = 1
     hasnext = True
 
     while hasnext:
-        url = pd_gen_url(EndPoint, YM='{0:04d}{1:02d}'.format(year, month),
+        url = pd_gen_url(EndPoint, service_key, YM='{0:04d}{1:02d}'.format(year, month),
                          SIDO=district1, GUNGU=district2, RES_NM=tourspot,
                          numOfRows=100, _type='json', pageNo=pageno)
 
@@ -68,7 +68,6 @@ def pd_fetch_tourspot_visitor(district1='', district2='', tourspot='', year=0, m
             hasnext = False
         else:
             pageno += 1
-
 
         json_items = json_body.get('items')
         yield json_items.get('item') if isinstance(json_items, dict) else None

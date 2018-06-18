@@ -1,12 +1,15 @@
 import collect
+from config import CONFIG
+import analyze
+import visualize
 
 if __name__ == '__main__':
 
-    # collect
+    # 데이터 수집(collectino)
 
-    collect.crawling_tourspot_visitor('서울특별시', 2017, 2017)
+    collect.crawling_tourspot_visitor(district=CONFIG['district'], **CONFIG['common'])
 
+    for country in CONFIG['countries']:
+        collect.crawling_foreign_visitor(country, **CONFIG['common'])
 
-
-    for country in [('중국', 112), ('일본', 130), ('미국', 275)]:
-        collect.crawling_foreign_visitor(country, 2017, 2017)
+    # 데이터 분석(analyze)

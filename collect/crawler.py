@@ -28,6 +28,7 @@ def preprocess_tourspot_visitor(data):
     data['restrict2'] = data['gungu']
     del data['gungu']
 
+
 def preprocess_foreign_visitor(data):
     # ed 삭제
     del data['ed']
@@ -58,46 +59,44 @@ def preprocess_foreign_visitor(data):
         del data['ym']
 
 
-def crawling_tourspot_visitor(district, start_year, end_year):
+def crawling_tourspot_visitor(district, start_year, end_year, fetch=True, result_directory='', service_key=''):
     results = []
 
-    for year in range(start_year, end_year + 1):
-        for month in range(1, 13):
-            for item in api.pd_fetch_tourspot_visitor(district, year=year, month=month):
-                for data in item:
-                    if data is None:
-                        continue
+    if fetch:
+        for year in range(start_year, end_year + 1):
+            for month in range(1, 13):
+                for item in api.pd_fetch_tourspot_visitor(district, year=year, month=month, service_key=service_key):
+                    for data in item:
+                        if data is None:
+                            continue
 
-                    preprocess_tourspot_visitor(data)
-                    results.append(data)
+                        preprocess_tourspot_visitor(data)
+                        results.append(data)    # results += data
 
-    # save data to file
-    filename = '%s/%s_tourinstspot_%s_%s.json' % (RESULT_DIRECTORY, district, start_year, end_year)
-    with open(filename, 'w', encoding='utf-8') as outfile:
-        json_string = json.dumps(results, indent=4, sort_keys=False, ensure_ascii=False)
-        outfile.write(json_string)
+        # save data to file
+        filename = '%s/%s_tourinstspot_%s_%s.json' % (result_directory, district, start_year, end_year)
+        with open(filename, 'w', encoding='utf-8') as outfile:
+            json_string = json.dumps(results, indent=4, sort_keys=False, ensure_ascii=False)
+            outfile.write(json_string)
+
+    # return filename
 
 
-def crawling_foreign_visitor(country, start_year, end_year):
+def crawling_foreign_visitor(country, start_year, end_year, fetch=True, result_directory='', service_key=''):
     results = []
 
-    for year in range(start_year, end_year+1):
-        for month in range(1, 13):
-            data = api.pd_fetch_foreign_visitor(country[1], year, month)
-            if data is None:
-                continue
+    if fetch:
+        for year in range(start_year, end_year+1):
+            for month in range(1, 13):
+                data = api.pd_fetch_foreign_visitor(country[1], year, month, service_key)
+                if data is None:
+                    continue
 
-            preprocess_foreign_visitor(data)
-            results.append(data)
-            
+                preprocess_foreign_visitor(data)
+                results.append(data)
 
-    # save data to file
-    filename = '%s/%s(%s)_foreign_visitor_%s_%s.json' % (RESULT_DIRECTORY, country[0], country[1], start_year, end_year)
-    with open(filename, 'w', encoding='utf-8') as outfile:
-        json_string = json.dumps(results, indent=4, sort_keys=True, ensure_ascii=False)
-        outfile.write(json_string)
-
-
-
-if not os.path.exists(RESULT_DIRECTORY):
-    os.makedirs(RESULT_DIRECTORY)
+        # save data to file
+        filename = '%s/%s(%s)_foreign_visitor_%s_%s.json' % (result_directory, country[0], country[1], start_year, end_year)
+        with open(filename, 'w', encoding='utf-8') as outfile:
+            json_string = json.dumps(results, indent=4, sort_keys=True, ensure_ascii=False)
+            outfile.write(json_string)
